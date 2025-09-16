@@ -54,9 +54,19 @@ class Console extends Command
     public function execute(InputInterface $input, OutputInterface $output)
     {
         $suiteName    = $input->getArgument('suite');
-        $this->output = $output;
+        // Validate suite name before using it
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $suiteName)) {
+            $output->writeln("<error>Invalid suite name.</error>");
+            return;
+        }
 
-        $config   = Configuration::config($input->getOption('config'));
+        $this->output = $output;
+        $configPath = $input->getOption('config');
+        if ($configPath && !preg_match('/^[a-zA-Z0-9_\-\/\.]+$/', $configPath)) {
+            $output->writeln("<error>Invalid config file path.</error>");
+            return;
+        }
+        $config   = Configuration::config($configPath);
         $settings = Configuration::suiteSettings($suiteName, $config);
 
         $options          = $input->getOptions();
@@ -112,8 +122,13 @@ class Console extends Command
     {
         $dialog = new QuestionHelper();
 
-        if (file_exists($bootstrap)) {
-            require $bootstrap;
+        $projectRoot = realpath(__DIR__ . '/../../../');
+        $bootstrapPath = realpath($bootstrap);
+
+        if ($bootstrapPath && strpos($bootstrapPath, $projectRoot) === 0 && file_exists($bootstrapPath)) {
+            require $bootstrapPath;
+        } else {
+            $output->writeln("<error>Invalid bootstrap file path.</error>");
         }
 
         do {

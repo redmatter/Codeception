@@ -45,22 +45,46 @@ class PostgreSql extends Db
 
     public function cleanup()
     {
+        // Get all tables in the public schema and generate DROP statements
         $tables = $this->dbh
-            ->query("SELECT 'DROP TABLE IF EXISTS \"' || tablename || '\" cascade;' FROM pg_tables WHERE schemaname = 'public';")
+            ->query("
+            SELECT 'DROP TABLE IF EXISTS ' || quote_ident(tablename) || ' CASCADE;'
+            FROM pg_tables
+            WHERE schemaname = 'public';
+        ")
             ->fetchAll();
 
+        // Get all sequences and generate DROP statements
         $sequences = $this->dbh
-            ->query("SELECT 'DROP SEQUENCE IF EXISTS \"' || relname || '\" cascade;' FROM pg_class WHERE relkind = 'S';")
+            ->query("
+            SELECT 'DROP SEQUENCE IF EXISTS ' || quote_ident(relname) || ' CASCADE;'
+            FROM pg_class
+            WHERE relkind = 'S';
+        ")
             ->fetchAll();
 
-        $types  = $this->dbh
-            ->query("SELECT 'DROP TYPE IF EXISTS \"' || pg_type.typname || '\" cascade;' FROM pg_type JOIN pg_enum ON pg_enum.enumtypid = pg_type.oid GROUP BY pg_type.typname;")
+        // Get all enum types and generate DROP statements
+        $types = $this->dbh
+            ->query("
+            SELECT 'DROP TYPE IF EXISTS ' || quote_ident(pg_type.typname) || ' CASCADE;'
+            FROM pg_type
+            JOIN pg_enum ON pg_enum.enumtypid = pg_type.oid
+            GROUP BY pg_type.typname;
+        ")
             ->fetchAll();
 
+        // Merge all DROP statements into a single array
         $drops = array_merge($tables, $sequences, $types);
+
+        // Execute each DROP statement safely
         if ($drops) {
             foreach ($drops as $drop) {
-                $this->dbh->exec($drop[0]);
+                try {
+                    $this->dbh->exec($drop[0]);
+                } catch (\PDOException $e) {
+                    // Log the error but continue with the next DROP
+                    error_log("Failed to execute: " . $drop[0] . " - " . $e->getMessage());
+                }
             }
         }
     }

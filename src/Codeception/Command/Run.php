@@ -269,8 +269,16 @@ class Run extends Command
 
     protected function matchTestFromFilename($filename, $tests_path)
     {
+        // Basic validation: ensure filename is a string and not too long
+        if (!is_string($filename) || strlen($filename) > 1024) {
+            throw new \InvalidArgumentException("Invalid test filename");
+        }
+
+        // Escape regex special characters in $tests_path
+        $safe_tests_path = preg_quote($tests_path, '~');
         $filename = str_replace(array('//', '\/', '\\'), '/', $filename);
-        $res      = preg_match("~^$tests_path/(.*?)/(.*)$~", $filename, $matches);
+
+        $res = preg_match("~^{$safe_tests_path}/(.*?)/(.*)$~", $filename, $matches);
         if (! $res) {
             throw new \InvalidArgumentException("Test file can't be matched");
         }

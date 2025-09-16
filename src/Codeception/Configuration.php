@@ -178,7 +178,14 @@ class Configuration
 
     protected static function autoloadHelpers()
     {
-        Autoload::registerSuffix('Helper', self::helpersDir());
+        $helpersDir = self::helpersDir();
+
+        // Sanitize helpersDir to allow only safe characters (alphanumeric, underscore, dash, slash, dot)
+        if (!is_string($helpersDir) || !preg_match('/^[\w\-\/\.]+$/', $helpersDir)) {
+            throw new \InvalidArgumentException('Invalid helpers directory path');
+        }
+
+        Autoload::registerSuffix('Helper', $helpersDir);
     }
 
     protected static function loadSuites()

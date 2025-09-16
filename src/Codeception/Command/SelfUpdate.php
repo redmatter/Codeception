@@ -178,6 +178,10 @@ class SelfUpdate extends Command
                 $phar = new \Phar($temp);
                 // free the variable to unlock the file
                 unset($phar);
+                // Add this validation before rename($temp, $this->filename);
+                if (!is_string($this->filename) || !preg_match('/^[\w\-\.\/]+\.phar$/', $this->filename) || strpos($this->filename, '..') !== false) {
+                    throw new \Exception('Invalid filename for update.');
+                }
                 rename($temp, $this->filename);
             } else {
                 throw new \Exception('Request failed.');

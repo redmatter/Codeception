@@ -81,6 +81,14 @@ class Configuration
         'error_level' => 'E_ALL & ~E_STRICT & ~E_DEPRECATED',
     );
 
+    // Add this helper function to validate the path
+    protected static function isPathInProjectDir($path)
+    {
+        $realProjectDir = realpath(self::$dir);
+        $realPath = realpath($path) ?: $path;
+        return strpos($realPath, $realProjectDir) === 0;
+    }
+    
     /**
      * Loads global config file which is `codeception.yml` by default.
      * When config is already loaded - returns it.
@@ -313,7 +321,7 @@ class Configuration
             return new $class($config);
         }
 
-        // try find module under users suite namespace setting
+        // try to find module under users suite namespace setting
         $className = $namespace.'\\Codeception\\Module\\' . $class;
 
         if (!@class_exists($className)) {
@@ -401,18 +409,29 @@ class Configuration
         if (!self::$logDir) {
             throw new ConfigurationException("Path for logs not specified. Please, set log path in global config");
         }
-        $dir = self::$dir . DIRECTORY_SEPARATOR . self::$logDir . DIRECTORY_SEPARATOR;
+        // Normalize logDir to prevent traversal
+        $projectDir = realpath(self::$dir);
+        $logDirName = basename(self::$logDir); // strips any path traversal
+        $targetDir = $projectDir . DIRECTORY_SEPARATOR . $logDirName . DIRECTORY_SEPARATOR;
 
-        if (!is_writable($dir)) {
-            @mkdir($dir);
-            @chmod($dir, 0777);
+        if (strpos($targetDir, $projectDir) !== 0) {
+            throw new ConfigurationException("Log directory path traversal detected.");
         }
 
-        if (!is_writable($dir)) {
+        if (!is_writable($targetDir)) {
+            @mkdir($targetDir);
+            $resolvedDir = realpath($targetDir);
+            if ($resolvedDir === false || strpos($resolvedDir, $projectDir) !== 0) {
+                throw new ConfigurationException("Log directory path traversal detected after creation.");
+            }
+            @chmod($resolvedDir, 0777);
+        }
+
+        if (!is_writable($targetDir)) {
             throw new ConfigurationException("Path for logs is not writable. Please, set appropriate access mode for log path.");
         }
 
-        return $dir;
+        return $targetDir;
     }
 
     /**

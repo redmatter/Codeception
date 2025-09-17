@@ -178,7 +178,13 @@ class SelfUpdate extends Command
                 $phar = new \Phar($temp);
                 // free the variable to unlock the file
                 unset($phar);
-                rename($temp, $this->filename);
+                // Before using $this->filename in rename
+                $realFilename = realpath($this->filename);
+                if ($realFilename === false || strpos($realFilename, getcwd()) !== 0) {
+                    throw new \Exception('Invalid target filename for update.');
+                }
+                rename($temp, $realFilename);
+                $this->filename = $realFilename;
             } else {
                 throw new \Exception('Request failed.');
             }

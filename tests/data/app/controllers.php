@@ -93,9 +93,9 @@ class cookies {
     }
 
     function POST() {
-        setcookie('f', 'b', time() + 60, null, null, false, true);
-        setcookie('foo', 'bar1', time() + 60, null, 'sub.localhost', false, true);
-        setcookie('baz', 'bar2', time() + 60,  null, 'sub.localhost', false, true);
+        setcookie('f', 'b', time() + 60, null, null, true, true);
+        setcookie('foo', 'bar1', time() + 60, null, 'sub.localhost', true, true);
+        setcookie('baz', 'bar2', time() + 60,  null, 'sub.localhost', true, true);
         data::set('form', $_POST);
         include __DIR__.'/view/cookies.php';
     }

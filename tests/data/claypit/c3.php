@@ -37,7 +37,7 @@ if (!function_exists('__c3_error')) {
         if (!headers_sent()) {
             header('X-Codeception-CodeCoverage-Error: ' . str_replace("\n", ' ', $message), true, 500);
         }
-        setcookie('CODECEPTION_CODECOVERAGE_ERROR', $message);
+        setcookie('CODECEPTION_CODECOVERAGE_ERROR', $message, 0, '', '', true, true);
     }
 }
 

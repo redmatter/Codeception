@@ -116,17 +116,35 @@ class WebDriverTest extends TestsForBrowsers
 
     public function testScreenshot()
     {
+        $outputDir = \Codeception\Configuration::outputDir();
+        $safeDir = realpath($outputDir . 'debug') . DIRECTORY_SEPARATOR;
+        $testName = 'debugTest';
+        $debugScreenshot = $safeDir . $testName . '.png';
+        $testshot = $outputDir . 'testshot.png';
+
         $this->module->amOnPage('/');
-        @unlink(\Codeception\Configuration::outputDir().'testshot.png');
-        $testName="debugTest";
+
+        // Only delete if file is in the safe directory and name is valid
+        $realTestshot = realpath($testshot);
+        if ($realTestshot !== false && strpos($realTestshot, realpath($outputDir)) === 0 && preg_match('/^[\w\-]+\.png$/', basename($testshot))) {
+            @unlink($realTestshot);
+        }
 
         $this->module->makeScreenshot($testName);
-        $this->assertFileExists(\Codeception\Configuration::outputDir().'debug/'.$testName.'.png');
-        @unlink(\Codeception\Configuration::outputDir().'debug/'.$testName.'.png');
+        $this->assertFileExists($debugScreenshot);
 
-        $this->module->_saveScreenshot(\Codeception\Configuration::outputDir().'testshot.png');
-        $this->assertFileExists(\Codeception\Configuration::outputDir().'testshot.png');
-        @unlink(\Codeception\Configuration::outputDir().'testshot.png');
+        $realDebugScreenshot = realpath($debugScreenshot);
+        if ($realDebugScreenshot !== false && strpos($realDebugScreenshot, $safeDir) === 0 && preg_match('/^[\w\-]+\.png$/', $testName . '.png')) {
+            @unlink($realDebugScreenshot);
+        }
+
+        $this->module->_saveScreenshot($testshot);
+        $this->assertFileExists($testshot);
+
+        $realTestshot = realpath($testshot);
+        if ($realTestshot !== false && strpos($realTestshot, realpath($outputDir)) === 0 && preg_match('/^[\w\-]+\.png$/', basename($testshot))) {
+            @unlink($realTestshot);
+        }
     }
 
     public function testSubmitForm() {

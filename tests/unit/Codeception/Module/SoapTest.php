@@ -17,6 +17,16 @@ class SoapTest extends \PHPUnit_Framework_TestCase
 
     protected $layout;
 
+    private function createSecureDomDocument() {
+        if (LIBXML_VERSION < 20900 && function_exists('libxml_disable_entity_loader')) {
+            libxml_disable_entity_loader(true);
+        }
+        $dom = $this->createSecureDomDocument();
+        $dom->resolveExternals = false;
+        $dom->substituteEntities = false;
+        return $dom;
+    }
+
     public function setUp() {
         $this->module = new \Codeception\Module\SOAP();
         $this->module->_setConfig(['schema' => 'http://www.w3.org/2001/xml.xsd', 'endpoint' => 'http://codeception.com/api/wsdl']);
@@ -27,7 +37,7 @@ class SoapTest extends \PHPUnit_Framework_TestCase
     }
     
     public function testXmlIsBuilt() {
-        $dom = new \DOMDocument();
+        $dom = $this->createSecureDomDocument();
         $dom->load($this->layout);
         $this->assertEqualXMLStructure($this->module->xmlRequest->documentElement, $dom->documentElement);
         $this->assertXmlStringEqualsXmlString($dom->saveXML(), $this->module->xmlRequest->saveXML());
@@ -35,7 +45,7 @@ class SoapTest extends \PHPUnit_Framework_TestCase
     
     public function testBuildHeaders() {
         $this->module->haveSoapHeader('AuthHeader', ['username' => 'davert', 'password' => '123456']);
-        $dom = new \DOMDocument();
+        $dom = $this->createSecureDomDocument();
         $dom->load($this->layout);
         $header = $dom->createElement('AuthHeader');
         $header->appendChild($dom->createElement('username','davert'));
@@ -48,7 +58,7 @@ class SoapTest extends \PHPUnit_Framework_TestCase
     {
         $this->module->sendSoapRequest('KillHumans', "<item><id>1</id><subitem>2</subitem></item>");
         $this->assertNotNull($this->module->xmlRequest);
-        $dom = new \DOMDocument();
+        $dom = $this->createSecureDomDocument();
         $dom->load($this->layout);
         $body = $dom->createElement('item');
         $body->appendChild($dom->createElement('id',1));
@@ -60,7 +70,7 @@ class SoapTest extends \PHPUnit_Framework_TestCase
     }
 
     public function testBuildRequestWithDomNode() {
-        $dom = new \DOMDocument();
+        $dom = $this->createSecureDomDocument();
         $dom->load($this->layout);
         $body = $dom->createElement('item');
         $body->appendChild($dom->createElement('id',1));

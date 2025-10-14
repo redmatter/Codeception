@@ -57,7 +57,13 @@ if (!class_exists('\\Codeception\\Codecept')) {
 // Load Codeception Config
 $config_file = realpath(__DIR__) . DIRECTORY_SEPARATOR . 'codeception.yml';
 if (isset($_SERVER['HTTP_X_CODECEPTION_CODECOVERAGE_CONFIG'])) {
-    $config_file = realpath(__DIR__) . DIRECTORY_SEPARATOR . $_SERVER['HTTP_X_CODECEPTION_CODECOVERAGE_CONFIG'];
+    $config_name = basename($_SERVER['HTTP_X_CODECEPTION_CODECOVERAGE_CONFIG']);
+    // Only allow .yml files with safe characters
+    if (preg_match('/^[\w\-]+\.yml$/', $config_name)) {
+        $config_file = realpath(__DIR__) . DIRECTORY_SEPARATOR . $config_name;
+    } else {
+        __c3_error('Invalid config file name');
+    }
 }
 if (!file_exists($config_file)) {
     __c3_error(sprintf("Codeception config file '%s' not found", $config_file));
@@ -140,12 +146,20 @@ if (!defined('C3_CODECOVERAGE_MEDIATE_STORAGE')) {
             : new PHP_CodeCoverage();
 
 
-        if (isset($_SERVER['HTTP_X_CODECEPTION_CODECOVERAGE_SUITE'])) {
-            $suite = $_SERVER['HTTP_X_CODECEPTION_CODECOVERAGE_SUITE'];
-            try {
-                $settings = \Codeception\Configuration::suiteSettings($suite, \Codeception\Configuration::config());
-            } catch (Exception $e) {
-                __c3_error($e->getMessage());
+        if (isset($_SERVER['HTTP_X_CODECEPTION_CODECOVERAGE_CONFIG'])) {
+            $config_name = basename($_SERVER['HTTP_X_CODECEPTION_CODECOVERAGE_CONFIG']);
+            if (preg_match('/^[\w\-]+\.yml$/', $config_name)) {
+                $config_dir = realpath(__DIR__);
+                $config_file = $config_dir . DIRECTORY_SEPARATOR . $config_name;
+                $real_config_file = realpath($config_file);
+                // Ensure the file is inside the config directory
+                if ($real_config_file && strpos($real_config_file, $config_dir . DIRECTORY_SEPARATOR) === 0) {
+                    $config_file = $real_config_file;
+                } else {
+                    __c3_error('Invalid config file path');
+                }
+            } else {
+                __c3_error('Invalid config file name');
             }
         } else {
             $settings = \Codeception\Configuration::config();

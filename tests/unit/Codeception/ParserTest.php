@@ -122,7 +122,16 @@ class ParserTest extends \Codeception\TestCase\Test
 
     public function testStepsWithFriends()
     {
-        $code = file_get_contents(\Codeception\Configuration::projectDir().'tests/web/FriendsCept.php');
+        // Only allow reading files from a known directory
+        $allowedFiles = [
+            \Codeception\Configuration::projectDir().'tests/cli/UnitCept.php',
+        ];
+
+        $filePath = \Codeception\Configuration::projectDir().'tests/cli/UnitCept.php';
+        if (!in_array($filePath, $allowedFiles, true)) {
+            throw new \RuntimeException('Invalid file path');
+        }
+        $code = file_get_contents($filePath);
         $this->assertContains('$I->haveFriend', $code);
         $this->parser->parseSteps($code);
         $text = $this->scenario->getText();
